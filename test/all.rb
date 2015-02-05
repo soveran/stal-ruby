@@ -15,20 +15,10 @@ test do |c|
   # Shortcut syntax
   expr = [:union, "qux", [:diff, [:inter, "foo", "bar"], "baz"]]
 
+  assert_equal ["b", "x", "y", "z"], Stal.solve(c, expr).sort
+
   # Explicit syntax
   expr = [:SUNIONSTORE, "qux", [:SDIFFSTORE, [:SINTERSTORE, "foo", "bar"], "baz"]]
-
-  assert_equal ["b", "x", "y", "z"], Stal.solve(c, expr).sort
-
-  # Explicit syntax with strings
-  expr = ["SUNIONSTORE", "qux", ["SDIFFSTORE", ["SINTERSTORE", "foo", "bar"], "baz"]]
-
-  assert_equal ["b", "x", "y", "z"], Stal.solve(c, expr).sort
-
-  # Explicit syntax with lowercase strings
-  expr = ["sunionstore", "qux", ["sdiffstore", ["sinterstore", "foo", "bar"], "baz"]]
-
-  assert_equal ["b", "x", "y", "z"], Stal.solve(c, expr).sort
 
   assert_equal ["b", "x", "y", "z"], Stal.solve(c, expr).sort
 
