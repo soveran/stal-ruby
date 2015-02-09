@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "stal"
-  s.version = "0.0.1"
+  s.version = "0.1.0"
   s.summary = %{Set algebra solver for Redis}
   s.description = %Q{Stal receives s-expressions and resolves the set operations in Redis}
   s.authors = ["Michel Martens"]
