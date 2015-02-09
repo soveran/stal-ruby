@@ -1,69 +1,85 @@
 # encoding: UTF-8
 
 require "redic"
-require "securerandom"
 
 module Stal
-  ALIASES = {
-    :diff        => "SDIFFSTORE",
-    :inter       => "SINTERSTORE",
-    :union       => "SUNIONSTORE",
+  class InvalidCommand < ArgumentError; end
+
+  COMMANDS = {
+    :SDIFF  => 'SDIFFSTORE',
+    :SINTER => 'SINTERSTORE',
+    :SUNION => 'SUNIONSTORE',
   }
 
-  def self.tr(term)
-    ALIASES.fetch(term, term)
+  def self.command(term)
+    COMMANDS.fetch(term) do
+      raise(InvalidCommand, term)
+    end
   end
 
-  def self.compute(expr, ids, acc)
-    id = sprintf("stal:%s", SecureRandom.uuid)
-
-    # Keys we need to clean up later
-    ids.push(id)
-
-    # Add command with destination key
-    cmd = [tr(expr[0]), id]
-
-    expr[1..-1].each do |item|
+  # Compile expression into Redis commands
+  def self.compile(expr, ids, ops)
+    expr.map do |item|
       if Array === item
-        cmd.push(compute(item, ids, acc))
+        convert(item, ids, ops)
       else
-        cmd.push(item)
+        item
       end
     end
+  end
 
-    acc.push(cmd)
+  # Transform :SDIFF, :SINTER and :SUNION commands
+  # into SDIFFSTORE, SINTERSTORE and SUNIONSTORE.
+  def self.convert(expr, ids, ops)
+    head, *tail = expr
+
+    # Key where partial results will be stored
+    id = sprintf("stal:%s", ids.size)
+
+    # Keep a reference to clean it up later
+    ids.push(id)
+
+    # Translate into command and destination key
+    op = [command(head), id]
+
+    # Compile the rest recursively
+    op.concat(compile(tail, ids, ops))
+
+    # Append the outermost operation
+    ops.push(op)
 
     return id
   end
 
-  def self.compile(expr)
-
-    # Commands to process
-    acc = []
-
-    # Keys to cleanup
+  # Return commands without any wrapping added by `solve`
+  def self.explain(expr)
     ids = []
+    ops = []
 
-    id = compute(expr, ids, acc)
+    ops.push(compile(expr, ids, ops))
 
-    acc.push([:SMEMBERS, id])
-    acc.push([:DEL, *ids])
-    acc
+    return ops
   end
 
   # Evaluate expression `expr` in the Redis client `c`.
   def self.solve(c, expr)
-    operations = compile(expr)
+    ids = []
+    ops = []
 
-    c.queue("MULTI")
+    ops.push(compile(expr, ids, ops))
 
-    operations.each do |op|
-      c.queue(*op)
+    if ops.one?
+      c.call(*ops[0])
+    else
+      c.queue("MULTI")
+
+      ops.each do |op|
+        c.queue(*op)
+      end
+
+      c.queue("DEL", *ids)
+      c.queue("EXEC")
+      c.commit[-1][-2]
     end
-
-    c.queue("EXEC")
-
-    # Return the result of SMEMBERS
-    c.commit[-1][-2]
   end
 end

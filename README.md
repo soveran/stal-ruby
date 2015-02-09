@@ -49,44 +49,39 @@ redis.call("SADD", "qux", "x", "y", "z")
 Now we can perform some set operations with `Stal`:
 
 ```ruby
-expr = [:union, "qux", [:diff, [:inter, "foo", "bar"], "baz"]]
+expr = [:SUNION, "qux", [:SDIFF, [:SINTER, "foo", "bar"], "baz"]]
 
 Stal.solve(redis, expr)
 #=> ["b", "x", "y", "z"]
 ```
 
-`Stal` translates the shortcuts `:union`, `:diff` and `:inter` into
-`SDIFFSTORE`, `SINTERSTORE` and `SUNIONSTORE` to perform the
-underlying operations. You can also use the explicit command
-(lowercase works too).
+`Stal` translates the internal calls to  `:SUNION`, `:SDIFF` and
+`:SINTER` into `SDIFFSTORE`, `SINTERSTORE` and `SUNIONSTORE` to
+perform the underlying operations, and it takes care of generating
+and deleting any temporary keys.
+
+Note that the only valid names for the internal commands are
+`:SUNION`, `:SDIFF` and `:SINTER`. Any other internal command will
+raise an error. The outmost command can be any set operation, for
+example:
 
 ```ruby
-expr = [:SUNIONSTORE, "qux", [:SDIFFSTORE, [:SINTERSTORE, "foo", "bar"], "baz"]]
+expr = [:SCARD, [:SINTER, "foo", "bar"]]
 
 Stal.solve(redis, expr)
-#=> ["b", "x", "y", "z"]
+#=> 2
 ```
 
 If you want to preview the commands `Stal` will send to generate
 the results, you can use `Stal.compile`:
 
 ```ruby
-Stal.compile([:inter, [:union, "foo", "bar"], "baz"])
-#  [[:SUNIONSTORE, "stal:55f631dc-...", "foo", "bar"],
-#   [:SINTERSTORE,
-#    "stal:fe5aaec9-...",
-#    "stal:55f631dc-...",
-#    "baz"],
-#   [:SMEMBERS, "stal:fe5aaec9-..."],
-#   [:DEL,
-#    "stal:fe5aaec9-...",
-#    "stal:55f631dc-..."]]
+Stal.explain([:SINTER, [:SUNION, "foo", "bar"], "baz"])
+#  [["SUNIONSTORE", "stal:0", "foo", "bar"],
+#   [:SINTER, "stal:0", "baz"]]
 ```
 
 All commands are pipelined and wrapped in a `MULTI/EXEC` transaction.
-The temporary keys, which have been shortened in the example, are
-deleted immediately.
-
 
 Installation
 ------------
