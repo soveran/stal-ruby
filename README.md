@@ -73,7 +73,7 @@ Stal.solve(redis, expr)
 ```
 
 If you want to preview the commands `Stal` will send to generate
-the results, you can use `Stal.compile`:
+the results, you can use `Stal.explain`:
 
 ```ruby
 Stal.explain([:SINTER, [:SUNION, "foo", "bar"], "baz"])
