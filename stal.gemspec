@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "stal"
-  s.version = "0.1.0"
+  s.version = "0.2.0"
   s.summary = %{Set algebra solver for Redis}
   s.description = %Q{Stal receives s-expressions and resolves the set operations in Redis}
   s.authors = ["Michel Martens"]
@@ -10,6 +10,6 @@ Gem::Specification.new do |s|
 
   s.files = `git ls-files`.split("\n")
 
-  s.add_dependency "redic", "~> 1.5.0"
-  s.add_development_dependency "cutest"
+  s.add_dependency "redic", "~> 1.5"
+  s.add_development_dependency "cutest", "~> 0"
 end
