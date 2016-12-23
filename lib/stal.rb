@@ -5,7 +5,7 @@ require "redic"
 
 module Stal
   LUA = File.expand_path("../../data/stal.lua", __FILE__)
-  SHA = "e98658a3aca397c69e8b452a73c6826cdd9f0577"
+  SHA = "4bd605bfee5f1e809089c5f98d10fab8aec38bd3"
 
   # Evaluate expression `expr` in the Redis client `c`.
   def self.solve(c, expr)

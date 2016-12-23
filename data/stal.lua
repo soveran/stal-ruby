@@ -82,7 +82,9 @@ local function solve(expr)
   end
 end
 
-redis.replicate_commands()
-redis.set_repl(redis.REPL_NONE)
+if redis.replicate_commands then
+  redis.replicate_commands()
+  redis.set_repl(redis.REPL_NONE)
+end
 
 return solve(expr)
